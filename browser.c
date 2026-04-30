@@ -112,7 +112,6 @@ static void cb_load_changed(WebKitWebView  *wv,
     case WEBKIT_LOAD_REDIRECTED:
         gtk_spinner_start(GTK_SPINNER(app->spinner));
         gtk_widget_set_sensitive(app->btn_reload, TRUE);
-        /* Muda ícone reload → parar */
         gtk_button_set_label(GTK_BUTTON(app->btn_reload), "✕");
         gtk_widget_set_tooltip_text(app->btn_reload, "Parar (Esc)");
         set_status(app, "Conectando…");
@@ -143,7 +142,6 @@ static gboolean cb_load_failed(WebKitWebView  *wv G_GNUC_UNUSED,
                                 gpointer        data)
 {
     AppState *app = (AppState *)data;
-    /* Erros de cancelamento (usuário clicou em parar) são ignorados */
     if (g_error_matches(error, WEBKIT_NETWORK_ERROR, WEBKIT_NETWORK_ERROR_CANCELLED))
         return TRUE;
 
@@ -179,7 +177,6 @@ static void cb_go_clicked(GtkWidget *w G_GNUC_UNUSED, gpointer data)
 static void cb_entry_activate(GtkEntry *e G_GNUC_UNUSED, gpointer data)
 { cb_go_clicked(NULL, data); }
 
-/* Seleciona tudo ao focar a barra de endereço */
 static gboolean cb_entry_focus(GtkWidget *w,
                                 GdkEventFocus *ev G_GNUC_UNUSED,
                                 gpointer data G_GNUC_UNUSED)
@@ -197,7 +194,6 @@ static void cb_forward_clicked(GtkWidget *w G_GNUC_UNUSED, gpointer d)
 static void cb_reload_clicked (GtkWidget *w G_GNUC_UNUSED, gpointer d)
 {
     AppState *app = (AppState *)d;
-    /* Se estiver carregando, btn_reload virou "parar" */
     gdouble p = webkit_web_view_get_estimated_load_progress(app->web_view);
     if (p > 0.0 && p < 1.0)
         webkit_web_view_stop_loading(app->web_view);
@@ -208,7 +204,6 @@ static void cb_reload_clicked (GtkWidget *w G_GNUC_UNUSED, gpointer d)
 static void cb_home_clicked   (GtkWidget *w G_GNUC_UNUSED, gpointer d)
 { browser_go_home((AppState *)d); }
 
-/* Atalhos de teclado globais */
 static gboolean cb_key_press(GtkWidget *w G_GNUC_UNUSED,
                               GdkEventKey *ev,
                               gpointer data)
@@ -238,7 +233,6 @@ static gboolean cb_key_press(GtkWidget *w G_GNUC_UNUSED,
     return FALSE;
 }
 
-/* Callback chamado pelos botões da homepage GTK */
 static void homepage_navigate_cb(const gchar *url, gpointer data)
 {
     browser_navigate((AppState *)data, url);
@@ -255,12 +249,12 @@ void browser_navigate(AppState *app, const gchar *raw_input)
     gchar *uri = search_resolve_input(raw_input, current_engine);
     show_webview(app);
     webkit_web_view_load_uri(app->web_view, uri);
+    gtk_widget_grab_focus(GTK_WIDGET(app->web_view)); /* única melhoria mantida */
     g_free(uri);
 }
 
 void browser_go_home(AppState *app)
 {
-    /* Atualiza badge do motor de busca na homepage */
     homepage_widget_update_engine(app->homepage, current_engine);
     gtk_window_set_title(GTK_WINDOW(app->window), "MiniBrowser");
     show_homepage(app);
@@ -288,7 +282,6 @@ void browser_reload(AppState *app)
 
 void browser_connect_signals(AppState *app)
 {
-    /* WebKit */
     g_signal_connect(app->web_view, "notify::title",
                      G_CALLBACK(cb_title_changed),    app);
     g_signal_connect(app->web_view, "notify::uri",
@@ -300,7 +293,6 @@ void browser_connect_signals(AppState *app)
     g_signal_connect(app->web_view, "notify::estimated-load-progress",
                      G_CALLBACK(cb_progress_changed), app);
 
-    /* Botões e entry */
     g_signal_connect(app->btn_go,      "clicked",     G_CALLBACK(cb_go_clicked),      app);
     g_signal_connect(app->btn_back,    "clicked",     G_CALLBACK(cb_back_clicked),    app);
     g_signal_connect(app->btn_forward, "clicked",     G_CALLBACK(cb_forward_clicked), app);
@@ -308,16 +300,9 @@ void browser_connect_signals(AppState *app)
     g_signal_connect(app->btn_home,    "clicked",     G_CALLBACK(cb_home_clicked),    app);
     g_signal_connect(app->entry,       "activate",    G_CALLBACK(cb_entry_activate),  app);
     g_signal_connect(app->entry,       "focus-in-event", G_CALLBACK(cb_entry_focus),  NULL);
-
-    /* Atalhos globais de teclado */
     g_signal_connect(app->window, "key-press-event", G_CALLBACK(cb_key_press), app);
-
-    /* Homepage GTK — conecta o callback de navegação */
-    /* (homepage_widget_new recebe o callback diretamente) */
-    (void)homepage_navigate_cb; /* usado em ui.c via browser_get_homepage_nav_cb */
 }
 
-/* Expõe o callback de navegação para a homepage (usado em ui.c) */
 void (*browser_get_homepage_nav_cb(void))(const gchar *, gpointer)
 {
     return homepage_navigate_cb;

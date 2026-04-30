@@ -235,21 +235,29 @@ void ui_build(AppState *app)
     app->web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
     WebKitSettings *settings = webkit_web_view_get_settings(app->web_view);
 
-    /* Performance: habilita o que acelera */
+    /* Mantém as configurações anteriores que funcionam */
     webkit_settings_set_enable_webgl(settings, TRUE);
     webkit_settings_set_hardware_acceleration_policy(
         settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_ALWAYS);
-
-    /* Performance: desabilita o que não é necessário para navegar */
     webkit_settings_set_enable_developer_extras(settings, FALSE);
     webkit_settings_set_enable_resizable_text_areas(settings, FALSE);
     webkit_settings_set_javascript_can_access_clipboard(settings, FALSE);
     webkit_settings_set_enable_webaudio(settings, FALSE);
     webkit_settings_set_enable_write_console_messages_to_stdout(settings, FALSE);
 
-    /* Cache agressivo */
+    /* Otimizações compatíveis com WebKitGTK 4.1 */
+    webkit_settings_set_enable_media_stream(settings, FALSE);
+    webkit_settings_set_enable_html5_database(settings, FALSE);
+    webkit_settings_set_enable_html5_local_storage(settings, TRUE);
+    webkit_settings_set_enable_smooth_scrolling(settings, TRUE);
+    webkit_settings_set_enable_site_specific_quirks(settings, FALSE);
+
+    /* Cache agressivo (ainda suportado) */
     WebKitWebContext *context = webkit_web_view_get_context(app->web_view);
     webkit_web_context_set_cache_model(context, WEBKIT_CACHE_MODEL_WEB_BROWSER);
+
+    /* Pré-carrega uma página em branco para aquecer o motor */
+    webkit_web_view_load_uri(app->web_view, "about:blank");
 
     /* ── Stack: homepage ↔ WebView ── */
     app->stack = gtk_stack_new();
