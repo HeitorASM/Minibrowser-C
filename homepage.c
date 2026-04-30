@@ -1,216 +1,253 @@
 #include "homepage.h"
 #include <time.h>
-#include <stdio.h>
+#include <string.h>
 
-/* HTML estático da homepage (gerado uma vez) */
-/*Tinha um erro que ele gerava a mesma coisa milhares de vezes em loop kkk*/
-static gchar *static_html = NULL;
+/* ── Dados dos atalhos ────────────────────────────────────────────────────── */
+typedef struct { const gchar *label; const gchar *url; const gchar *icon; } Shortcut;
 
-static void ensure_static_html(void)
+static const Shortcut SHORTCUTS[] = {
+    { "GitHub",       "https://github.com",           "󰊤" },
+    { "Wikipedia",    "https://wikipedia.org",        "W"  },
+    { "YouTube",      "https://youtube.com",          "▶"  },
+    { "Hacker News",  "https://news.ycombinator.com", "Y"  },
+    { "Reddit",       "https://reddit.com",           "🅁"  },
+    { "OpenStreetMap","https://openstreetmap.org",    "🗺"  },
+};
+static const int N_SHORTCUTS = (int)G_N_ELEMENTS(SHORTCUTS);
+
+/* ── Estado interno do widget ─────────────────────────────────────────────── */
+typedef struct {
+    GtkWidget  *clock_label;
+    GtkWidget  *date_label;
+    GtkWidget  *engine_label;
+    guint       tick_id;
+} HomepageData;
+
+/* Libera HomepageData quando o widget é destruído */
+static void on_homepage_destroy(GtkWidget *w G_GNUC_UNUSED, gpointer data)
 {
-    if (static_html)
-        return;
-
-    const char *shortcuts[][3] = {
-        /*
-        a ideia e que teria uma icone mais ele não funciona por causa da biblioteca do GTK
-        */
-        { "GitHub",     "https://github.com",           "" },
-        { "Wikipedia",  "https://wikipedia.org",        "" },
-        { "YouTube",    "https://youtube.com",          "" },
-        { "HackerNews", "https://news.ycombinator.com", "" },
-        { "Reddit",     "https://reddit.com",           "" },
-        { "OpenStreetMap","https://openstreetmap.org",  "" },
-    };
-    const int N = (int)(sizeof(shortcuts) / sizeof(shortcuts[0]));
-
-    GString *shortcuts_html = g_string_new(NULL);
-    for (int i = 0; i < N; i++) {
-        g_string_append_printf(shortcuts_html,
-            "<a href='%s' class='shortcut'>"
-            "  <span class='sc-icon'>%s</span>"
-            "  <span class='sc-label'>%s</span>"
-            "</a>",
-            shortcuts[i][1], shortcuts[i][2], shortcuts[i][0]);
-    }
-
-    static_html = g_strdup_printf(
-/*Homepage e em html e exibida usando o GTK e a API*/
-"<!DOCTYPE html>"
-"<html lang='pt-BR'>"
-"<head>"
-"<meta charset='UTF-8'/>"
-"<title>MiniBrowser — Início</title>"
-"<style>"
-"  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap');"
-
-"  :root {"
-"    --bg:      #0b0c10;"
-"    --surface: #13151c;"
-"    --border:  #1e2130;"
-"    --text:    #c9d1e0;"
-"    --muted:   #4a5068;"
-"    --accent:  #5e9bff;"
-"    --accent2: #ff7eb3;"
-"    --green:   #4ade80;"
-"  }"
-
-"  * { margin:0; padding:0; box-sizing:border-box; }"
-
-"  body {"
-"    background: var(--bg);"
-"    color: var(--text);"
-"    font-family: 'DM Mono', monospace;"
-"    min-height: 100vh;"
-"    display: flex;"
-"    flex-direction: column;"
-"    align-items: center;"
-"    justify-content: center;"
-"    gap: 40px;"
-"    padding: 40px 20px;"
-"    overflow-x: hidden;"
-"  }"
-
-"  body::before {"
-"    content: '';"
-"    position: fixed; inset: 0;"
-"    background-image:"
-"      linear-gradient(var(--border) 1px, transparent 1px),"
-"      linear-gradient(90deg, var(--border) 1px, transparent 1px);"
-"    background-size: 40px 40px;"
-"    opacity: 0.35;"
-"    pointer-events: none;"
-"    z-index: 0;"
-"  }"
-
-"  .content { position: relative; z-index: 1; width:100%%; max-width:680px;"
-"             display:flex; flex-direction:column; align-items:center; gap:32px; }"
-
-"  #clock {"
-"    font-family: 'DM Serif Display', serif;"
-"    font-size: clamp(3.5rem, 10vw, 6rem);"
-"    letter-spacing: -3px;"
-"    color: #fff;"
-"    line-height: 1;"
-"    text-shadow: 0 0 60px rgba(94,155,255,0.3);"
-"    animation: fadeUp .6s ease both;"
-"  }"
-
-"  #date {"
-"    font-size: .75rem;"
-"    color: var(--muted);"
-"    letter-spacing: .15em;"
-"    text-transform: uppercase;"
-"    animation: fadeUp .6s .1s ease both;"
-"  }"
-
-"  .engine-badge {"
-"    display: inline-flex; align-items: center; gap: 6px;"
-"    background: var(--surface);"
-"    border: 1px solid var(--border);"
-"    border-radius: 999px;"
-"    padding: 5px 14px;"
-"    font-size: .75rem;"
-"    color: var(--accent);"
-"    animation: fadeUp .6s .2s ease both;"
-"  }"
-
-"  .shortcuts {"
-"    display: grid;"
-"    grid-template-columns: repeat(3, 1fr);"
-"    gap: 10px;"
-"    width: 100%%;"
-"    animation: fadeUp .6s .3s ease both;"
-"  }"
-
-"  .shortcut {"
-"    display: flex; flex-direction: column; align-items: center; gap: 6px;"
-"    background: var(--surface);"
-"    border: 1px solid var(--border);"
-"    border-radius: 12px;"
-"    padding: 16px 10px;"
-"    text-decoration: none;"
-"    color: var(--text);"
-"    transition: border-color .2s, transform .2s, box-shadow .2s;"
-"  }"
-"  .shortcut:hover {"
-"    border-color: var(--accent);"
-"    transform: translateY(-3px);"
-"    box-shadow: 0 8px 24px rgba(94,155,255,0.12);"
-"  }"
-"  .sc-icon  { font-size: 1.5rem; }"
-"  .sc-label { font-size: .7rem; color: var(--muted); letter-spacing:.05em; }"
-
-"  footer {"
-"    font-size: .65rem;"
-"    color: var(--muted);"
-"    letter-spacing: .1em;"
-"    animation: fadeUp .6s .4s ease both;"
-"  }"
-"  footer span { color: var(--accent2); }"
-
-"  @keyframes fadeUp {"
-"    from { opacity:0; transform:translateY(14px); }"
-"    to   { opacity:1; transform:translateY(0);    }"
-"  }"
-"</style>"
-"</head>"
-"<body>"
-"<div class='content'>"
-
-"  <div id='clock'>00:00:00</div>"
-"  <div id='date'></div>"
-
-"  <div class='engine-badge' id='engine-badge'></div>"
-
-"  <div class='shortcuts'>%s</div>"
-
-"  <footer>MiniBrowser &mdash; GTK&nbsp;3 + WebKitGTK &mdash; Feito em <span>C</span></footer>"
-
-"</div>"
-
-"<script>"
-"(function tick() {"
-"  const now = new Date();"
-"  const pad = n => String(n).padStart(2,'0');"
-"  document.getElementById('clock').textContent ="
-"    pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());"
-"  setTimeout(tick, 1000);"
-"})();"
-
-"function setDate(dateStr) {"
-"  document.getElementById('date').textContent = dateStr;"
-"}"
-
-"function setEngine(icon, name) {"
-"  document.getElementById('engine-badge').innerHTML = icon + ' ' + name + ' ativo';"
-"}"
-"</script>"
-
-"</body></html>",
-        shortcuts_html->str
-    );
-
-    g_string_free(shortcuts_html, TRUE);
+    HomepageData *hd = (HomepageData *)data;
+    if (hd->tick_id)
+        g_source_remove(hd->tick_id);
+    g_free(hd);
 }
 
-gchar *homepage_get_html(void)
-{
-    ensure_static_html();
-    return g_strdup(static_html);
-}
-
-gchar *homepage_generate_dynamic_js(void)
+/* ── Relógio ──────────────────────────────────────────────────────────────── */
+static void update_clock(HomepageData *hd)
 {
     time_t     now = time(NULL);
     struct tm *tm  = localtime(&now);
-    char date_str[64];
-    strftime(date_str, sizeof(date_str), "%A, %d de %B de %Y", tm);
+    char clock_str[16], date_str[64];
 
-    /* O motor de busca ativo é acessado via variável global current_engine */
-    extern SearchEngine current_engine;
-    const SearchEngineInfo *eng = &SEARCH_ENGINES[current_engine];
+    strftime(clock_str, sizeof(clock_str), "%H:%M:%S", tm);
+    strftime(date_str,  sizeof(date_str),
+             "%A, %d de %B de %Y", tm);
 
-    return g_strdup_printf("setDate('%s'); setEngine('%s', '%s');",
-                           date_str, eng->icon, eng->name);
+    /* Relógio em markup grande */
+    gchar *markup = g_strdup_printf(
+        "<span font_desc='Monospace Bold 48' foreground='#ffffff'>%s</span>",
+        clock_str);
+    gtk_label_set_markup(GTK_LABEL(hd->clock_label), markup);
+    g_free(markup);
+
+    /* Data em texto menor */
+    gchar *date_markup = g_strdup_printf(
+        "<span font_desc='Monospace 9' foreground='#4a5068' letter_spacing='1024'>%s</span>",
+        date_str);
+    gtk_label_set_markup(GTK_LABEL(hd->date_label), date_markup);
+    g_free(date_markup);
+}
+
+gboolean homepage_widget_tick(gpointer data)
+{
+    HomepageData *hd = (HomepageData *)g_object_get_data(G_OBJECT(data), "hp_data");
+    if (hd) update_clock(hd);
+    return G_SOURCE_CONTINUE;
+}
+
+/* ── Shortcut button ──────────────────────────────────────────────────────── */
+typedef struct { void (*cb)(const gchar*, gpointer); gpointer ud; const gchar *url; } NavClosure;
+
+static void on_shortcut_clicked(GtkWidget *w G_GNUC_UNUSED, gpointer data)
+{
+    NavClosure *nc = (NavClosure *)data;
+    nc->cb(nc->url, nc->ud);
+}
+
+static GtkWidget *make_shortcut_btn(const Shortcut *sc,
+                                    void (*navigate_cb)(const gchar*, gpointer),
+                                    gpointer user_data)
+{
+    GtkWidget *btn  = gtk_button_new();
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+    /* Ícone */
+    GtkWidget *icon_lbl = gtk_label_new(sc->icon);
+    gchar *icon_markup = g_strdup_printf(
+        "<span font_desc='Sans 18' foreground='#c9d1e0'>%s</span>", sc->icon);
+    gtk_label_set_markup(GTK_LABEL(icon_lbl), icon_markup);
+    g_free(icon_markup);
+
+    /* Nome */
+    GtkWidget *name_lbl = gtk_label_new(NULL);
+    gchar *name_markup = g_strdup_printf(
+        "<span font_desc='Monospace 8' foreground='#4a5068'>%s</span>", sc->label);
+    gtk_label_set_markup(GTK_LABEL(name_lbl), name_markup);
+    g_free(name_markup);
+
+    gtk_box_pack_start(GTK_BOX(vbox), icon_lbl, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), name_lbl, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(btn), vbox);
+
+    /* Estilo do botão */
+    GtkStyleContext *ctx = gtk_widget_get_style_context(btn);
+    gtk_style_context_add_class(ctx, "shortcut-btn");
+
+    /* Closure: alocada e liberada com o botão */
+    NavClosure *nc = g_new(NavClosure, 1);
+    nc->cb  = navigate_cb;
+    nc->ud  = user_data;
+    nc->url = sc->url;  
+    g_object_set_data_full(G_OBJECT(btn), "nav_closure", nc, g_free);
+    g_signal_connect(btn, "clicked", G_CALLBACK(on_shortcut_clicked), nc);
+
+    return btn;
+}
+
+/* ── CSS do tema ──────────────────────────────────────────────────────────── */
+static void apply_homepage_css(void)
+{
+    static gboolean done = FALSE;
+    if (done) return;
+    done = TRUE;
+
+    const gchar *css =
+        /* Área da homepage */
+        ".homepage-root {"
+        "  background-color: #0b0c10;"
+        "}"
+        /* Badge do motor de busca */
+        ".engine-badge {"
+        "  background: #13151c;"
+        "  border-radius: 999px;"
+        "  border: 1px solid #1e2130;"
+        "  padding: 4px 14px;"
+        "}"
+        ".engine-badge label {"
+        "  color: #5e9bff;"
+        "  font-size: 11px;"
+        "}"
+        /* Botões de atalho */
+        ".shortcut-btn {"
+        "  background: #13151c;"
+        "  border: 1px solid #1e2130;"
+        "  border-radius: 12px;"
+        "  padding: 8px;"
+        "  min-width: 100px;"
+        "  min-height: 70px;"
+        "}"
+        ".shortcut-btn:hover {"
+        "  background: #1e2133;"
+        "  border-color: #5e9bff;"
+        "}"
+        ".shortcut-btn:active {"
+        "  background: #161926;"
+        "}"
+        /* Rodapé */
+        ".hp-footer {"
+        "  color: #2e3350;"
+        "  font-size: 10px;"
+        "}";
+
+    GtkCssProvider *prov = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(prov, css, -1, NULL);
+    gtk_style_context_add_provider_for_screen(
+        gdk_screen_get_default(),
+        GTK_STYLE_PROVIDER(prov),
+        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(prov);
+}
+
+/* ── API pública ──────────────────────────────────────────────────────────── */
+
+GtkWidget *homepage_widget_new(void (*navigate_cb)(const gchar *url, gpointer data),
+                               gpointer user_data)
+{
+    apply_homepage_css();
+
+    /* Raiz com fundo escuro */
+    GtkWidget *root = gtk_event_box_new();
+    gtk_style_context_add_class(gtk_widget_get_style_context(root), "homepage-root");
+
+    /* Coluna principal centralizada via halign/valign no EventBox */
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
+    gtk_widget_set_halign(vbox, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(vbox, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_top(vbox,    40);
+    gtk_widget_set_margin_bottom(vbox, 40);
+    gtk_widget_set_margin_start(vbox,  40);
+    gtk_widget_set_margin_end(vbox,    40);
+    gtk_container_add(GTK_CONTAINER(root), vbox);
+
+    /* Relógio */
+    GtkWidget *clock_label = gtk_label_new(NULL);
+    gtk_widget_set_halign(clock_label, GTK_ALIGN_CENTER);
+    gtk_box_pack_start(GTK_BOX(vbox), clock_label, FALSE, FALSE, 0);
+
+    /* Data */
+    GtkWidget *date_label = gtk_label_new(NULL);
+    gtk_widget_set_halign(date_label, GTK_ALIGN_CENTER);
+    gtk_box_pack_start(GTK_BOX(vbox), date_label, FALSE, FALSE, 0);
+
+    /* Badge do motor de busca */
+    GtkWidget *badge_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_halign(badge_box, GTK_ALIGN_CENTER);
+    gtk_style_context_add_class(gtk_widget_get_style_context(badge_box), "engine-badge");
+
+    GtkWidget *engine_label = gtk_label_new("🦆 DuckDuckGo ativo");
+    gtk_box_pack_start(GTK_BOX(badge_box), engine_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), badge_box, FALSE, FALSE, 0);
+
+    /* Grade de atalhos 3×2 */
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+    gtk_widget_set_halign(grid, GTK_ALIGN_CENTER);
+
+    for (int i = 0; i < N_SHORTCUTS; i++) {
+        GtkWidget *btn = make_shortcut_btn(&SHORTCUTS[i], navigate_cb, user_data);
+        gtk_grid_attach(GTK_GRID(grid), btn, i % 3, i / 3, 1, 1);
+    }
+    gtk_box_pack_start(GTK_BOX(vbox), grid, FALSE, FALSE, 0);
+
+
+    /* Estado interno */
+    HomepageData *hd    = g_new0(HomepageData, 1);
+    hd->clock_label     = clock_label;
+    hd->date_label      = date_label;
+    hd->engine_label    = engine_label;
+
+    g_object_set_data(G_OBJECT(root), "hp_data", hd);
+    g_signal_connect(root, "destroy", G_CALLBACK(on_homepage_destroy), hd);
+
+    /* Primeira atualização imediata */
+    update_clock(hd);
+
+    /* Timer de 1 s */
+    hd->tick_id = g_timeout_add_seconds(1, homepage_widget_tick, root);
+
+    gtk_widget_show_all(root);
+    return root;
+}
+
+void homepage_widget_update_engine(GtkWidget *homepage, SearchEngine engine)
+{
+    HomepageData *hd = (HomepageData *)g_object_get_data(G_OBJECT(homepage), "hp_data");
+    if (!hd) return;
+
+    const SearchEngineInfo *eng = &SEARCH_ENGINES[engine];
+    gchar *text = g_strdup_printf("%s %s ativo", eng->icon, eng->name);
+    gtk_label_set_text(GTK_LABEL(hd->engine_label), text);
+    g_free(text);
 }

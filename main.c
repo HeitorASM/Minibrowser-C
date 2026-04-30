@@ -1,15 +1,3 @@
-/*
- * main.c — Ponto de entrada do MiniBrowser
- *
- * Responsabilidade: inicializar GTK, construir a UI, conectar os sinais
- * e carregar a homepage (ou URL passada por argumento).
- *
- * Toda a lógica real está nos módulos:
- *   ui.c      → widgets GTK e CSS
- *   browser.c → navegação e callbacks WebKit
- *   search.c  → resolução de URL/query
- *   homepage.c→ HTML da tela inicial
- */
 #include <gtk/gtk.h>
 #include <string.h>
 

@@ -1,6 +1,3 @@
-/*
- * app.h — Estrutura central compartilhada entre todos os módulos
- */
 #pragma once
 
 #include <gtk/gtk.h>
@@ -12,7 +9,7 @@ typedef struct {
     GtkWidget     *window;
 
     /* toolbar */
-    GtkWidget     *entry;        /* barra de endereços / busca       */
+    GtkWidget     *entry;
     GtkWidget     *btn_go;
     GtkWidget     *btn_back;
     GtkWidget     *btn_forward;
@@ -20,9 +17,14 @@ typedef struct {
     GtkWidget     *btn_home;
     GtkWidget     *spinner;
 
-    /* conteúdo */
+    /* Stack: alterna entre homepage GTK e WebView */
+    GtkWidget     *stack;
+    GtkWidget     *homepage;   /* widget GTK nativo da homepage */
     WebKitWebView *web_view;
 
     /* status */
     GtkWidget     *status_label;
+    GtkWidget     *tls_icon;   /* cadeado HTTPS */
+
+    gboolean       on_homepage;
 } AppState;

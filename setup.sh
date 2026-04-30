@@ -20,6 +20,4 @@ make clean
 make
 
 echo ""
-echo "✔  Tudo pronto!"
-echo "   Execute com:  ./minibrowser"
-echo "   Ou com URL:   ./minibrowser https://exemplo.com"
+echo "✔ pronto"

@@ -1,27 +1,26 @@
 /*
- * homepage.h — Tela inicial do MiniBrowser
+ * homepage.h — Tela inicial do MiniBrowser (GTK puro, sem WebView)
  *
- * Gera o HTML da página inicial em tempo de execução, permitindo
- * injetar informações dinâmicas (hora, provedor de busca ativo, etc.)
+ * A homepage é um widget GTK nativo, exibido diretamente no lugar
+ * do WebView quando o usuário está na tela inicial. Isso elimina o
+ * overhead de carregar um motor HTML/JS para uma página simples.
  */
 #pragma once
 
-#include <glib.h>
+#include <gtk/gtk.h>
 #include "search.h"
-
-/**
- * homepage_get_html:
- * Retorna o HTML completo da tela inicial (versão estática) alocado com g_malloc.
- * O chamador deve liberar com g_free.
- */
-gchar *homepage_get_html(void);
-
-/**
- * homepage_generate_dynamic_js:
- * Retorna uma string JavaScript que atualiza a data e o motor de busca
- * exibidos na página inicial. Deve ser executada após o carregamento da página.
- */
-gchar *homepage_generate_dynamic_js(void);
+#include "app.h"
 
 /** URI interna usada para identificar a homepage */
 #define HOMEPAGE_URI "minibrowser://home"
+
+/**
+ * @navigate_cb: callback chamado quando o usuário clica em um atalho.
+ * @user_data:   ponteiro passado ao callback (normalmente AppState*).
+ */
+GtkWidget *homepage_widget_new(void (*navigate_cb)(const gchar *url, gpointer data),
+                               gpointer user_data);
+
+void homepage_widget_update_engine(GtkWidget *homepage, SearchEngine engine);
+
+gboolean homepage_widget_tick(gpointer homepage_widget);
