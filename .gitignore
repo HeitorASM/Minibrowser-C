@@ -1,2 +1,5 @@
 *.o
 *.exe
+
+# compilado fun
+*minibrowser
