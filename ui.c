@@ -5,10 +5,8 @@
 
 /* ── CSS do tema ─────────────────────────────────────────────────────────── */
 static const gchar *APP_CSS =
-    /* Janela */
     "window { background:#0b0c10; }"
 
-    /* Toolbar */
     ".toolbar {"
     "  background: #13151c;"
     "  border-bottom: 1px solid #1e2130;"
@@ -16,14 +14,12 @@ static const gchar *APP_CSS =
     "  min-height: 44px;"
     "}"
 
-    /* Status bar */
     ".statusbar {"
     "  background: #0f1117;"
     "  border-top: 1px solid #1e2130;"
     "  padding: 3px 10px;"
     "}"
 
-    /* Entry (barra de endereço) */
     "entry {"
     "  background: #1a1d2b;"
     "  color: #c9d1e0;"
@@ -39,7 +35,6 @@ static const gchar *APP_CSS =
     "  background: #1e2133;"
     "}"
 
-    /* Botões flat da toolbar */
     "button.flat {"
     "  background: none;"
     "  border: none;"
@@ -53,7 +48,6 @@ static const gchar *APP_CSS =
     "button.flat:hover    { background:#1e2130; color:#c9d1e0; }"
     "button.flat:disabled { opacity:.3; }"
 
-    /* Botão "Ir" */
     "button.go {"
     "  background: #5e9bff;"
     "  color: #0b0c10;"
@@ -66,20 +60,18 @@ static const gchar *APP_CSS =
     "}"
     "button.go:hover { background: #74c7ec; }"
 
-    /* Label de status */
     "label.status {"
     "  color: #2e3350;"
     "  font-size: 11px;"
     "}"
 
-    /* Popover do seletor de motor */
     "popover { background:#13151c; border:1px solid #1e2130; border-radius:10px; }"
     "popover modelbutton {"
     "  color:#c9d1e0; padding:6px 14px; border-radius:6px; font-size:13px;"
     "}"
     "popover modelbutton:hover { background:#1e2130; }";
 
-/* ── Seletor de motor de busca ────────────────────────────────────────────── */
+/* ── Seletor de motor de busca ───────────────────────────────────────────── */
 
 typedef struct {
     AppState     *app;
@@ -91,7 +83,6 @@ static void on_engine_selected(GtkWidget *item G_GNUC_UNUSED, gpointer data)
     EngineChoice *ch = (EngineChoice *)data;
     current_engine = ch->engine;
     ui_set_engine_label(ch->app, ch->engine);
-    /* Atualiza badge na homepage GTK */
     homepage_widget_update_engine(ch->app->homepage, ch->engine);
 }
 
@@ -143,6 +134,75 @@ static GtkWidget *flat_btn(const gchar *label, const gchar *tooltip)
     gtk_widget_set_tooltip_text(b, tooltip);
     gtk_style_context_add_class(gtk_widget_get_style_context(b), "flat");
     return b;
+}
+static void
+apply_webkit_performance_tweaks (WebKitWebView *web_view)
+{
+    WebKitSettings   *settings = webkit_web_view_get_settings   (web_view);
+    WebKitWebContext *context  = webkit_web_view_get_context    (web_view);
+
+    /*Aceleração de hardware forçada*/
+    webkit_settings_set_hardware_acceleration_policy (
+        settings,
+        WEBKIT_HARDWARE_ACCELERATION_POLICY_ALWAYS);
+
+    /* Cache */
+    webkit_web_context_set_cache_model (context,
+        WEBKIT_CACHE_MODEL_WEB_BROWSER);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    gchar *cache_dir = g_build_filename (g_get_user_cache_dir(),
+                                         "minibrowser", NULL);
+    webkit_web_context_set_disk_cache_directory (context, cache_dir);
+    g_free (cache_dir);
+#pragma GCC diagnostic pop
+
+    /* Multiprocesso */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if WEBKIT_CHECK_VERSION(2, 30, 0)
+    webkit_web_context_set_process_model (
+        context,
+        WEBKIT_PROCESS_MODEL_MULTIPLE_SECONDARY_PROCESSES);
+#elif WEBKIT_CHECK_VERSION(2, 26, 0)
+    webkit_web_context_set_process_model (
+        context,
+        WEBKIT_PROCESS_MODEL_SECONDARY_PROCESS);
+#endif
+#pragma GCC diagnostic pop
+
+    /* ── Desabilita recursos pesados desnecessários ────────────────── */
+    webkit_settings_set_enable_webgl             (settings, FALSE);
+    webkit_settings_set_enable_webaudio          (settings, FALSE);
+    webkit_settings_set_enable_media_stream      (settings, FALSE);
+    webkit_settings_set_enable_html5_database    (settings, FALSE);
+    webkit_settings_set_enable_write_console_messages_to_stdout (settings, FALSE);
+    webkit_settings_set_enable_site_specific_quirks (settings, FALSE);
+    webkit_settings_set_enable_resizable_text_areas (settings, FALSE);
+    webkit_settings_set_javascript_can_access_clipboard (settings, FALSE);
+
+    /* ── Ativa recursos que melhoram a fluidez ──────────────────── */
+    webkit_settings_set_enable_smooth_scrolling  (settings, TRUE);
+    webkit_settings_set_enable_html5_local_storage (settings, TRUE);
+
+    /* ── Pré‑conexão DNS para domínios frequentes (atalhos da homepage) ─ */
+    const gchar *domains[] = {
+        "github.com",
+        "wikipedia.org",
+        "youtube.com",
+        "news.ycombinator.com",
+        "reddit.com",
+        "openstreetmap.org",
+        "duckduckgo.com",
+        "google.com",
+        "bing.com",
+        "search.brave.com",
+        NULL
+    };
+    for (const gchar **d = domains; *d; d++) {
+        webkit_web_context_prefetch_dns (context, *d);
+    }
 }
 
 /* ── API pública ─────────────────────────────────────────────────────────── */
@@ -211,7 +271,7 @@ void ui_build(AppState *app)
     g_object_set_data(G_OBJECT(app->window), "engine_btn", engine_btn);
     gtk_box_pack_start(GTK_BOX(toolbar), engine_btn, FALSE, FALSE, 0);
 
-    /* Ícone de TLS (cadeado) — fica à esquerda da entry */
+    /* Ícone de TLS */
     app->tls_icon = gtk_label_new("");
     gtk_box_pack_start(GTK_BOX(toolbar), app->tls_icon, FALSE, FALSE, 2);
 
@@ -231,33 +291,9 @@ void ui_build(AppState *app)
     app->spinner = gtk_spinner_new();
     gtk_box_pack_start(GTK_BOX(toolbar), app->spinner, FALSE, FALSE, 6);
 
-    /* ── WebKit — configurações de performance ── */
+    
     app->web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
-    WebKitSettings *settings = webkit_web_view_get_settings(app->web_view);
-
-    /* Mantém as configurações anteriores que funcionam */
-    webkit_settings_set_enable_webgl(settings, TRUE);
-    webkit_settings_set_hardware_acceleration_policy(
-        settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_ALWAYS);
-    webkit_settings_set_enable_developer_extras(settings, FALSE);
-    webkit_settings_set_enable_resizable_text_areas(settings, FALSE);
-    webkit_settings_set_javascript_can_access_clipboard(settings, FALSE);
-    webkit_settings_set_enable_webaudio(settings, FALSE);
-    webkit_settings_set_enable_write_console_messages_to_stdout(settings, FALSE);
-
-    /* Otimizações compatíveis com WebKitGTK 4.1 */
-    webkit_settings_set_enable_media_stream(settings, FALSE);
-    webkit_settings_set_enable_html5_database(settings, FALSE);
-    webkit_settings_set_enable_html5_local_storage(settings, TRUE);
-    webkit_settings_set_enable_smooth_scrolling(settings, TRUE);
-    webkit_settings_set_enable_site_specific_quirks(settings, FALSE);
-
-    /* Cache agressivo (ainda suportado) */
-    WebKitWebContext *context = webkit_web_view_get_context(app->web_view);
-    webkit_web_context_set_cache_model(context, WEBKIT_CACHE_MODEL_WEB_BROWSER);
-
-    /* Pré-carrega uma página em branco para aquecer o motor */
-    webkit_web_view_load_uri(app->web_view, "about:blank");
+    apply_webkit_performance_tweaks (app->web_view);
 
     /* ── Stack: homepage ↔ WebView ── */
     app->stack = gtk_stack_new();

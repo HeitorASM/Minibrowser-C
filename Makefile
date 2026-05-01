@@ -6,8 +6,8 @@ CC      := gcc
 TARGET  := minibrowser
 PKGS    := gtk+-3.0 webkit2gtk-4.1
 
-CFLAGS  := $(shell pkg-config --cflags $(PKGS)) -Wall -Wextra -O2 -std=c11
-LDFLAGS := $(shell pkg-config --libs   $(PKGS))
+CFLAGS  := $(shell pkg-config --cflags $(PKGS)) -Wall -Wextra -O3 -march=native -flto -fomit-frame-pointer -std=c11
+LDFLAGS := $(shell pkg-config --libs   $(PKGS)) -flto
 
 # Todos os .c do projeto
 SRCS := main.c ui.c browser.c search.c homepage.c
