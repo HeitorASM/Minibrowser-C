@@ -1,9 +1,7 @@
-# MiniBrowser — Navegador Web Minimalista em C
+# MiniBrowser — Navegador Web Minimalista
 
-Um navegador web leve e rápido construído com GTK3 e WebKitGTK, focado em simplicidade e desempenho. Desenvolvido inteiramente em C, oferece uma experiência de navegação fluida com recursos essenciais e interface limpa.
+Um navegador web leve construído com Qt6 Widgets e Qt WebEngine, focado em simplicidade e uma interface limpa. Desenvolvido inteiramente em C++, oferece navegação essencial, temas claro/escuro e uma homepage personalizada com relógio ao vivo e atalhos.
 
-> Esse projeto é basicamente um side project meu feito no tempo entre o desenvolvimento 
-> de um outro projeto maior que venho desenvolvendo há alguns meses >w<
 
 <p align="center">
   <img src="screenshot.png" alt="MiniBrowser em execução" width="400">
@@ -11,65 +9,72 @@ Um navegador web leve e rápido construído com GTK3 e WebKitGTK, focado em simp
 
 ## Funcionalidades
 
-- **Navegação básica**: Voltar, avançar, recarregar e página inicial
-- **Barra de endereços inteligente**: Reconhecimento automático entre URLs e buscas
-- **Múltiplos motores de busca**: DuckDuckGo, Google, Bing e Brave Search
-- **Homepage personalizada**: Design dark com relógio ao vivo, atalhos e badge do motor ativo
-- **Interface responsiva**: Throttling de atualizações para máximo desempenho
-- **Cache otimizado**: Página inicial estática com injeção dinâmica via JavaScript
-- **Tema escuro moderno**: Design editorial com animações suaves
+
+Navegação básica: voltar, avançar, recarregar/parar e página inicial
+Barra de endereços inteligente (Omnibox): distingue automaticamente entre URLs e termos de busca, com indicador de conexão segura (🔒 HTTPS / ⛔ HTTP)
+Múltiplos motores de busca: DuckDuckGo, Google, Bing e Brave Search, configuráveis nas Configurações
+Preferências persistentes: motor de busca e tema salvos via QSettings entre sessões
+Cache em disco e pré-resolução de DNS: perfil dedicado do WebEngine com cache HTTP em disco e prefetch de DNS dos domínios mais comuns para navegação mais ágil
+Atalhos de teclado: Alt+← / Alt+→ (navegação), F5 (recarregar), Esc (parar), Ctrl+L (focar barra de endereço)
+
 
 ## Compilação
 
 ### Pré-requisitos (Ubuntu/Debian)
 
 ```bash
-sudo apt-get update
+bashsudo apt-get update
 sudo apt-get install -y \
     build-essential \
-    libgtk-3-dev \
-    libwebkit2gtk-4.1-dev \
-    pkg-config
+    cmake \
+    qt6-base-dev \
+    qt6-webengine-dev \
+    libqt6webenginewidgets6
 ```
-
 ### Compilando
 
 ```bash
-make
+bashmkdir build && cd build
+cmake ..
+cmake --build . --parallel
 ```
-
 ### Executando
 
-```bash
-# Abre a página inicial
+```bash 
+# A partir do diretório de build
 ./minibrowser
-
-# Abre uma URL específica
-./minibrowser https://github.com
-
-# Executa com recriação automática
-make run
 ```
+
+O executável carrega os temas (style_dark.qss / style_light.qss) a partir de uma pasta resources/ copiada automaticamente para o mesmo diretório do binário durante o build — não é necessário nenhum passo manual.
+
+
 
 ## Estrutura do Projeto
-
 ```
 .
-├── app.h           # Estrutura central da aplicação
-├── main.c          # Ponto de entrada
-├── ui.c / ui.h     # Construção da interface GTK
-├── browser.c / browser.h  # Lógica de navegação
-├── search.c / search.h    # Motor de busca
-├── homepage.c / homepage.h # Gerador da página inicial
-├── Makefile        # Script de compilação
-├── setup.sh        # Script de instalação de dependências
-└── README.md       # Este arquivo
+├── CMakeLists.txt           # Script de build (CMake)
+├── resources/
+│   ├── style_dark.qss       # Tema escuro (QSS)
+│   └── style_light.qss      # Tema claro (QSS)
+├── src/
+│   ├── main.cpp              # Ponto de entrada
+│   ├── MainWindow.h/.cpp     # Janela principal, toolbar e atalhos
+│   ├── BrowserCore.h/.cpp    # Lógica de navegação e perfil do WebEngine
+│   ├── Omnibox.h/.cpp        # Barra de endereços com indicador de segurança
+│   ├── HomepageWidget.h/.cpp # Página inicial (relógio, atalhos, badge)
+│   ├── SettingsDialog.h/.cpp # Diálogo de configurações
+│   ├── ThemeManager.h/.cpp   # Aplicação e persistência do tema
+│   ├── UrlResolver.h/.cpp    # Decide entre URL direta ou busca
+│   └── SearchEngine.h        # Definição dos motores de busca disponíveis
+└── README.md                 # Este arquivo
 ```
 
 ## Tecnologias Utilizadas
 
-- **C (C11)**: Linguagem principal
-- **GTK+ 3.0**: Interface gráfica
-- **WebKitGTK 4.1**: Motor de renderização
-- **GLib**: Utilitários de string e estrutura de dados
-- **JavaScript**
+
+- C++17: linguagem principal
+- Qt6 Widgets: interface gráfica
+- Qt WebEngine (Chromium): motor de renderização
+- CMake: sistema de build
+- QSS (Qt Style Sheets): temas claro/escuro
+- QSettings: persistência de preferências do usuário
