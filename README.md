@@ -23,7 +23,7 @@ Atalhos de teclado: Alt+← / Alt+→ (navegação), F5 (recarregar), Esc (parar
 ### Pré-requisitos (Ubuntu/Debian)
 
 ```bash
-bashsudo apt-get update
+sudo apt-get update
 sudo apt-get install -y \
     build-essential \
     cmake \
@@ -34,7 +34,7 @@ sudo apt-get install -y \
 ### Compilando
 
 ```bash
-bashmkdir build && cd build
+mkdir build && cd build
 cmake ..
 cmake --build . --parallel
 ```
