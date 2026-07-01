@@ -37,5 +37,9 @@ target_link_libraries(minibrowser
     Qt6::WebEngineWidgets
 )
 
-# Copy QSS resources to build directory
-file(COPY resources/ DESTINATION ${CMAKE_BINARY_DIR}/resources)
+add_custom_command(TARGET minibrowser POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/resources
+        $<TARGET_FILE_DIR:minibrowser>/resources
+    COMMENT "Copiando resources (QSS) para o diretório do executável"
+)

@@ -1,10 +1,13 @@
 #include "HomepageWidget.h"
+#include <QVBoxLayout>
 #include <QGridLayout>
 #include <QPushButton>
 #include <QDateTime>
 #include <QStyle>
 #include <QStyleOption>
 #include <QPainter>
+#include <QGraphicsDropShadowEffect>
+#include <QColor>
 
 HomepageWidget::HomepageWidget(QWidget *parent)
     : QWidget(parent), m_timer(new QTimer(this)) {
@@ -49,13 +52,22 @@ void HomepageWidget::setupUi() {
         { "YouTube", "https://youtube.com", "▶" },
         { "Hacker News", "https://news.ycombinator.com", "Y" },
         { "Reddit", "https://reddit.com", "R" },
-        { "OpenStreetMap", "https://openstreetmap.org", "🗺" }
+        { "OpenStreetMap", "https://openstreetmap.org", "O }
     };
 
-    for (int i = 0; i < 6; ++i) {
+    constexpr int shortcutCount = sizeof(shortcuts) / sizeof(shortcuts[0]);
+    for (int i = 0; i < shortcutCount; ++i) {
         QPushButton *btn = new QPushButton(this);
         btn->setProperty("shortcut", true);
         btn->setFixedSize(120, 90);
+        btn->setCursor(Qt::PointingHandCursor);
+
+        // QSS não suporta box-shadow; usamos QGraphicsDropShadowEffect para o efeito real
+        auto *shadow = new QGraphicsDropShadowEffect(btn);
+        shadow->setBlurRadius(18);
+        shadow->setOffset(0, 4);
+        shadow->setColor(QColor(0, 0, 0, 60));
+        btn->setGraphicsEffect(shadow);
 
         QVBoxLayout *bl = new QVBoxLayout(btn);
         bl->setSpacing(2);

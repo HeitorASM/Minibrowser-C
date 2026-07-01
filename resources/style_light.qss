@@ -41,9 +41,9 @@ Omnibox {
     padding: 2px 8px;
     min-height: 32px;
 }
-Omnibox:focus-within {
-    border-color: #0969da;
-    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+Omnibox:focus {
+    border: 2px solid #0969da;
+    padding: 1px 7px;
 }
 
 Omnibox QLineEdit {
@@ -95,9 +95,11 @@ HomepageWidget QPushButton[shortcut="true"] {
 }
 HomepageWidget QPushButton[shortcut="true"]:hover {
     background: #f6f8fa;
-    border-color: #0969da;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    border: 1px solid #0969da;
+}
+HomepageWidget QPushButton[shortcut="true"]:pressed {
+    background: #eaeef2;
+    border: 1px solid #0550ae;
 }
 HomepageWidget QPushButton[shortcut="true"] QLabel[iconLabel="true"] {
     font-size: 28px;

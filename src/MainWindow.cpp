@@ -8,6 +8,9 @@
 #include <QMessageBox>
 #include <QStyle>
 #include <QSettings>
+#include <QTimer>
+#include <QShortcut>
+#include <QKeySequence>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     m_core = new BrowserCore(this);
@@ -112,6 +115,26 @@ void MainWindow::connectSignals() {
 
     connect(m_homepage, &HomepageWidget::navigateRequested,
             m_core, &BrowserCore::load);
+
+    // Atalhos de teclado (os tooltips já prometiam isso, mas não existiam)
+    auto *backShortcut = new QShortcut(QKeySequence("Alt+Left"), this);
+    connect(backShortcut, &QShortcut::activated, this, &MainWindow::onBackClicked);
+
+    auto *forwardShortcut = new QShortcut(QKeySequence("Alt+Right"), this);
+    connect(forwardShortcut, &QShortcut::activated, this, &MainWindow::onForwardClicked);
+
+    auto *reloadShortcut = new QShortcut(QKeySequence("F5"), this);
+    connect(reloadShortcut, &QShortcut::activated, this, &MainWindow::onReloadStopClicked);
+
+    auto *stopShortcut = new QShortcut(QKeySequence("Esc"), this);
+    connect(stopShortcut, &QShortcut::activated, this, [this]() {
+        if (m_isLoading) m_core->stop();
+    });
+
+    auto *focusOmniboxShortcut = new QShortcut(QKeySequence("Ctrl+L"), this);
+    connect(focusOmniboxShortcut, &QShortcut::activated, this, [this]() {
+        m_omnibox->setFocus();
+    });
 }
 
 void MainWindow::loadSettings() {
@@ -143,12 +166,17 @@ void MainWindow::onLoadFinished(bool ok) {
     m_btnReloadStop->setToolTip("Recarregar (F5)");
     updateButtons();
     if (!ok) {
-        m_statusBar->showMessage("Erro ao carregar a página");
+        m_statusBar->setVisible(true);
+        m_statusBar->showMessage("Erro ao carregar a página", 5000);
     } else {
-        m_statusBar->showMessage("Pronto", 3000);
-        m_statusBar->setVisible(false);
+        m_statusBar->setVisible(true);
+        m_statusBar->showMessage("Pronto", 1500);
+        // Esconde a barra somente depois que a mensagem "Pronto" for exibida
+        QTimer::singleShot(1500, this, [this]() {
+            if (!m_isLoading)
+                m_statusBar->setVisible(false);
+        });
     }
-    m_statusBar->setVisible(false);
 }
 
 void MainWindow::onUrlChanged(const QString &url) {
