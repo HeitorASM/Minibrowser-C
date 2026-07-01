@@ -1,5 +1,15 @@
 *.o
+*.elf
 *.exe
 
-# compilado fun
-*minibrowser
+*.log
+*.bin
+
+.vscode/
+.idea/
+
+.venv/
+venv/
+
+bin/
+build/
