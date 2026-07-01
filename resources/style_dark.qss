@@ -1,0 +1,118 @@
+/* ===== TEMA ESCURO (sem preto puro) ===== */
+QMainWindow {
+    background: #0d1117;
+}
+
+QWidget {
+    font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+/* Toolbar */
+QWidget#toolbar {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #161b22, stop:1 #0d1117);
+    border-bottom: 1px solid #30363d;
+}
+
+/* Botões da toolbar */
+QToolButton {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 16px;
+    color: #c9d1d9;
+}
+QToolButton:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+QToolButton:pressed {
+    background: rgba(255, 255, 255, 0.15);
+}
+QToolButton:disabled {
+    color: #484f58;
+}
+
+/* Omnibox */
+Omnibox {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 20px;
+    padding: 2px 8px;
+    min-height: 32px;
+}
+Omnibox:focus-within {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+Omnibox QLineEdit {
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: #c9d1d9;
+    selection-background-color: #1f6feb;
+    selection-color: white;
+}
+Omnibox QLabel#lockIcon {
+    color: #8b949e;
+    font-size: 14px;
+}
+
+/* Homepage */
+HomepageWidget {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 #161b22, stop:1 #0d1117);
+}
+
+HomepageWidget QLabel#clockLabel {
+    color: #c9d1d9;
+    font-size: 48pt;
+    font-weight: 300;
+}
+HomepageWidget QLabel#dateLabel {
+    color: #8b949e;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+HomepageWidget QLabel#engineBadge {
+    background: #21262d;
+    border-radius: 999px;
+    padding: 4px 16px;
+    color: #58a6ff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Shortcut cards */
+HomepageWidget QPushButton[shortcut="true"] {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 12px;
+    min-width: 96px;
+    min-height: 80px;
+}
+HomepageWidget QPushButton[shortcut="true"]:hover {
+    background: #1c2128;
+    border-color: #58a6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+HomepageWidget QPushButton[shortcut="true"] QLabel[iconLabel="true"] {
+    font-size: 28px;
+    color: #c9d1d9;
+}
+HomepageWidget QPushButton[shortcut="true"] QLabel[nameLabel="true"] {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 4px;
+}
+
+/* Status bar */
+QStatusBar {
+    background: #161b22;
+    color: #8b949e;
+    font-size: 12px;
+    border-top: 1px solid #30363d;
+}
