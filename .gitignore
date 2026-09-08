@@ -5,6 +5,7 @@
 *.log
 *.bin
 
+.vs/
 .vscode/
 .idea/
 
